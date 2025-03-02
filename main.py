@@ -20,7 +20,7 @@ class ImageProcessorApp:
     def __init__(self, root):
         self.root = root
         self.root.title("画像処理アプリ")
-        self.root.geometry("800x600")
+        self.root.geometry("800x500")
 
         # 出力ディレクトリの設定
         self.output_dir = os.path.join(os.path.expanduser("~"), "Downloads", "edited_fig")
@@ -57,7 +57,7 @@ class ImageProcessorApp:
         self.output_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
         self.output_entry.insert(0, self.output_dir)
 
-        output_btn = ttk.Button(top_frame, text="変更", command=self.change_output_dir)
+        output_btn = ttk.Button(top_frame, text="出力先の変更", command=self.change_output_dir)
         output_btn.pack(side=tk.LEFT, padx=5)
 
         # タブコントロール
@@ -154,7 +154,7 @@ class ImageProcessorApp:
         format_combo.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=5)
 
         # 説明
-        ttk.Label(frame, text="注: HEICはlowでは直接サポートされていません。").grid(row=1, column=0, columnspan=2, sticky=tk.W, pady=10)
+        # ttk.Label(frame, text="注: HEICはlowでは直接サポートされていません。").grid(row=1, column=0, columnspan=2, sticky=tk.W, pady=10)
 
     def setup_resize_tab(self):
         logger.debug("setup_resize_tab")

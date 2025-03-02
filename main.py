@@ -1,29 +1,38 @@
 import os
-import sys
-import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
-from tkinter.scrolledtext import ScrolledText
-import tkinterdnd2
-from tkinterdnd2 import DND_FILES
 import threading
-from PIL import Image, ImageTk
-from pathlib import Path
-import shutil
+import tkinter as tk
+from tkinter import filedialog, messagebox, ttk
+from tkinter.scrolledtext import ScrolledText
+
+import tkinterdnd2
+from PIL import Image
+from tkinterdnd2 import DND_FILES
+
+from logger import Logger
+
+logger = Logger()
+
+DEFAULT_COMPRESS_RATE = 7
+DEFAULT_RESIZE_VALUE = 800
+PNG_COLORS = 256
+
 
 class ImageProcessorApp:
     def __init__(self, root):
         self.root = root
         self.root.title("画像処理アプリ")
-        self.root.geometry("800x600")
+        self.root.geometry("800x500")
 
         # 出力ディレクトリの設定
-        self.output_dir = os.path.join(os.path.expanduser("~"), "Downloads", "edited_fig")
+        self.output_dir = os.path.join(
+            os.path.expanduser("~"), "Downloads", "edited_fig"
+        )
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
 
         # ドラッグ&ドロップ対応
         self.root.drop_target_register(DND_FILES)
-        self.root.dnd_bind('<<Drop>>', self.drop)
+        self.root.dnd_bind("<<Drop>>", self.drop)
 
         # 画像ファイルパスリスト
         self.image_paths = []
@@ -32,7 +41,7 @@ class ImageProcessorApp:
         self.create_ui()
 
     def create_ui(self):
-        print("create_ui")
+        logger.debug("create_ui")
         # メインフレーム
         main_frame = ttk.Frame(self.root, padding="10")
         main_frame.pack(fill=tk.BOTH, expand=True)
@@ -42,7 +51,9 @@ class ImageProcessorApp:
         top_frame.pack(fill=tk.X, pady=5)
 
         # ファイル選択ボタン
-        select_btn = ttk.Button(top_frame, text="ファイル選択", command=self.select_files)
+        select_btn = ttk.Button(
+            top_frame, text="ファイル選択", command=self.select_files
+        )
         select_btn.pack(side=tk.LEFT, padx=5)
 
         # 出力ディレクトリ設定
@@ -51,7 +62,9 @@ class ImageProcessorApp:
         self.output_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
         self.output_entry.insert(0, self.output_dir)
 
-        output_btn = ttk.Button(top_frame, text="変更", command=self.change_output_dir)
+        output_btn = ttk.Button(
+            top_frame, text="出力先の変更", command=self.change_output_dir
+        )
         output_btn.pack(side=tk.LEFT, padx=5)
 
         # タブコントロール
@@ -84,70 +97,81 @@ class ImageProcessorApp:
         execute_frame = ttk.Frame(main_frame)
         execute_frame.pack(fill=tk.X, pady=10)
 
-        self.progress = ttk.Progressbar(execute_frame, orient=tk.HORIZONTAL, length=100, mode='determinate')
+        self.progress = ttk.Progressbar(
+            execute_frame, orient=tk.HORIZONTAL, length=100, mode="determinate"
+        )
         self.progress.pack(fill=tk.X, side=tk.LEFT, expand=True, padx=5)
 
-        self.execute_btn = ttk.Button(execute_frame, text="実行", command=self.execute)
+        self.execute_btn = ttk.Button(
+            execute_frame, text="実行", command=self.execute
+        )
         self.execute_btn.pack(side=tk.RIGHT, padx=5)
 
-    # def setup_compress_tab(self):
-    #     frame = ttk.Frame(self.compress_tab, padding="10")
-    #     frame.pack(fill=tk.BOTH, expand=True)
-
-    #     ttk.Label(frame, text="圧縮品質 (低 → 高):").grid(row=0, column=0, sticky=tk.W, pady=10)
-
-    #     self.compress_quality = tk.IntVar(value=85)
-    #     quality_scale = ttk.Scale(frame, from_=1, to=100, variable=self.compress_quality, orient=tk.HORIZONTAL)
-    #     quality_scale.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=5)
-
-    #     quality_label = ttk.Label(frame, textvariable=self.compress_quality)
-    #     quality_label.grid(row=0, column=2, padx=5)
-
-    #     # 説明
-    #     ttk.Label(frame, text="高い値ほど低品質になりますが、ファイルサイズは小さくなります。").grid(row=1, column=0, columnspan=3, sticky=tk.W, pady=10)
+        # 取り消しボタン
+        cancel_btn = ttk.Button(
+            execute_frame, text="取り消し", command=self.cancel_upload
+        )
+        cancel_btn.pack(side=tk.LEFT, padx=5)
 
     def setup_compress_tab(self):
-        print("setup_compress_tab")
+        logger.debug("setup_compress_tab")
         frame = ttk.Frame(self.compress_tab, padding="10")
         frame.pack(fill=tk.BOTH, expand=True)
 
-        ttk.Label(frame, text="圧縮品質 (低 → 高):").grid(row=0, column=0, sticky=tk.W, pady=10)
+        ttk.Label(frame, text="圧縮後の品質 (低 → 高):").grid(
+            row=0, column=0, sticky=tk.W, pady=10
+        )
 
-        self.compress_quality = tk.DoubleVar(value=85)  # IntVar → DoubleVar に変更
-        quality_scale = ttk.Scale(frame, from_=1, to=100, variable=self.compress_quality, orient=tk.HORIZONTAL)
+        self.compress_quality = tk.DoubleVar(
+            value=DEFAULT_COMPRESS_RATE
+        )  # IntVar → DoubleVar に変更
+        quality_scale = ttk.Scale(
+            frame,
+            from_=1,
+            to=10,
+            variable=self.compress_quality,
+            orient=tk.HORIZONTAL,
+        )
         quality_scale.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=5)
 
-        self.quality_label = ttk.Label(frame, text=str(int(self.compress_quality.get())))  # 初期値を整数で表示
+        self.quality_label = ttk.Label(
+            frame, text=str(int(self.compress_quality.get()))
+        )  # 初期値を整数で表示
         self.quality_label.grid(row=0, column=2, padx=5)
 
         # スライダーの値が変わったら整数にしてラベルを更新
         def update_label(*args):
-            self.quality_label.config(text=str(int(self.compress_quality.get())))
+            self.quality_label.config(
+                text=str(int(self.compress_quality.get()))
+            )
 
         self.compress_quality.trace_add("write", update_label)
 
         # 説明
-        ttk.Label(frame, text="高い値ほど低品質になりますが、ファイルサイズは小さくなります。").grid(row=1, column=0, columnspan=3, sticky=tk.W, pady=10)
-
+        ttk.Label(
+            frame,
+            text="低い値ほど低品質になり、ファイルサイズが小さくなります。",
+        ).grid(row=1, column=0, columnspan=3, sticky=tk.W, pady=10)
 
     def setup_format_tab(self):
-        print("setup_format_tab")
+        logger.debug("setup_format_tab")
         frame = ttk.Frame(self.format_tab, padding="10")
         frame.pack(fill=tk.BOTH, expand=True)
 
-        ttk.Label(frame, text="変換先形式:").grid(row=0, column=0, sticky=tk.W, pady=10)
+        ttk.Label(frame, text="変換先形式:").grid(
+            row=0, column=0, sticky=tk.W, pady=10
+        )
 
         self.target_format = tk.StringVar(value="jpeg")
         formats = ["jpeg", "png", "webp", "tiff", "bmp", "gif"]
 
-        format_combo = ttk.Combobox(frame, textvariable=self.target_format, values=formats)
+        format_combo = ttk.Combobox(
+            frame, textvariable=self.target_format, values=formats
+        )
         format_combo.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=5)
 
-        # 説明
-        ttk.Label(frame, text="注: HEICはPillowでは直接サポートされていません。").grid(row=1, column=0, columnspan=2, sticky=tk.W, pady=10)
-
     def setup_resize_tab(self):
-        print("setup_resize_tab")
+        logger.debug("setup_resize_tab")
         frame = ttk.Frame(self.resize_tab, padding="10")
         frame.pack(fill=tk.BOTH, expand=True)
 
@@ -155,7 +179,9 @@ class ImageProcessorApp:
         size_frame = ttk.LabelFrame(frame, text="現在のサイズ")
         size_frame.pack(fill=tk.X, pady=10)
 
-        self.current_size_label = ttk.Label(size_frame, text="ファイルを選択してください")
+        self.current_size_label = ttk.Label(
+            size_frame, text="ファイルを選択してください"
+        )
         self.current_size_label.pack(pady=5)
 
         # リサイズパラメータ
@@ -163,74 +189,90 @@ class ImageProcessorApp:
         resize_frame.pack(fill=tk.X, pady=10)
 
         self.resize_by = tk.StringVar(value="width")
-        ttk.Radiobutton(resize_frame, text="幅を指定", variable=self.resize_by, value="width").grid(row=0, column=0, padx=5, sticky=tk.W)
-        ttk.Radiobutton(resize_frame, text="高さを指定", variable=self.resize_by, value="height").grid(row=1, column=0, padx=5, sticky=tk.W)
+        ttk.Radiobutton(
+            resize_frame,
+            text="幅を指定",
+            variable=self.resize_by,
+            value="width",
+        ).grid(row=0, column=0, padx=5, sticky=tk.W)
+        ttk.Radiobutton(
+            resize_frame,
+            text="高さを指定",
+            variable=self.resize_by,
+            value="height",
+        ).grid(row=1, column=0, padx=5, sticky=tk.W)
 
-        self.resize_value = tk.IntVar(value=800)
-        ttk.Entry(resize_frame, textvariable=self.resize_value, width=10).grid(row=0, column=1, rowspan=2, padx=5)
-        ttk.Label(resize_frame, text="pixels").grid(row=0, column=2, rowspan=2, padx=5, sticky=tk.W)
-
-        # プレビュー
-        preview_frame = ttk.LabelFrame(frame, text="プレビュー")
-        preview_frame.pack(fill=tk.BOTH, expand=True, pady=10)
-
-        self.preview_label = ttk.Label(preview_frame, text="選択された画像のプレビュー")
-        self.preview_label.pack(pady=20)
-
-        self.preview_btn = ttk.Button(frame, text="プレビュー", command=self.show_preview)
-        self.preview_btn.pack(pady=5)
+        self.resize_value = tk.IntVar(value=DEFAULT_RESIZE_VALUE)
+        ttk.Entry(resize_frame, textvariable=self.resize_value, width=10).grid(
+            row=0, column=1, rowspan=2, padx=5
+        )
+        ttk.Label(resize_frame, text="pixels").grid(
+            row=0, column=2, rowspan=2, padx=5, sticky=tk.W
+        )
 
     def select_files(self):
-        print("select_files")
-        files = filedialog.askopenfilenames(filetypes=[("画像ファイル", "*.jpg *.jpeg *.png *.webp *.tiff *.bmp *.gif")])
+        logger.debug("select_files")
+        files = filedialog.askopenfilenames(
+            filetypes=[
+                (
+                    "画像ファイル",
+                    "*.jpg *.jpeg *.png *.webp *.tiff *.bmp *.gif",
+                )
+            ]
+        )
         if files:
-            self.image_paths = list(files)
+            self.image_paths.extend(list(files))
             self.update_file_list()
             self.update_image_info()
 
     def drop(self, event):
-        print("drop")
+        logger.debug("drop")
         files = self.root.tk.splitlist(event.data)
+        logger.debug(f"files: {files}")
         valid_files = [f for f in files if self.is_valid_image(f)]
         if valid_files:
-            self.image_paths = valid_files
+            self.image_paths.extend(valid_files)
+            logger.debug(f"image_paths: {self.image_paths}")
             self.update_file_list()
             self.update_image_info()
 
     def is_valid_image(self, file_path):
-        print("is_valid_image")
+        logger.debug("is_valid_image")
         _, ext = os.path.splitext(file_path)
-        return ext.lower() in ['.jpg', '.jpeg', '.png', '.webp', '.tiff', '.bmp', '.gif']
+        return ext.lower() in [
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".webp",
+            ".tiff",
+            ".bmp",
+            ".gif",
+        ]
 
     def update_file_list(self):
-        print("update_file_list")
+        logger.debug("update_file_list")
         self.file_list.delete(1.0, tk.END)
         for path in self.image_paths:
             self.file_list.insert(tk.END, f"{path}\n")
+        logger.debug(f"image_paths: {self.image_paths}")
 
     def update_image_info(self):
-        print("update_image_info")
+        logger.debug("update_image_info")
         if self.image_paths:
             try:
                 img = Image.open(self.image_paths[0])
                 width, height = img.size
-                self.current_size_label.config(text=f"幅: {width}px, 高さ: {height}px")
+                self.current_size_label.config(
+                    text=f"幅: {width}px, 高さ: {height}px"
+                )
 
                 # プレビュー表示
-                self.display_preview(img)
+                # self.display_preview(img)
             except Exception as e:
                 self.current_size_label.config(text=f"エラー: {str(e)}")
 
-    def display_preview(self, img):
-        print("display_preview")
-        # プレビュー用にサイズ調整
-        img.thumbnail((300, 300))
-        photo = ImageTk.PhotoImage(img)
-        self.preview_label.config(image=photo)
-        self.preview_label.image = photo  # 参照を保持
-
     def show_preview(self):
-        print("show_preview")
+        logger.debug("show_preview")
         if not self.image_paths:
             messagebox.showinfo("情報", "画像を選択してください")
             return
@@ -247,15 +289,16 @@ class ImageProcessorApp:
                 new_height = self.resize_value.get()
                 new_width = int(width * (new_height / height))
 
-            resized_img = img.resize((new_width, new_height), Image.LANCZOS)
-            self.display_preview(resized_img)
-
-            self.current_size_label.config(text=f"元のサイズ: {width}px x {height}px\n新しいサイズ: {new_width}px x {new_height}px")
+            self.current_size_label.config(
+                text=f"元のサイズ: {width}px x {height}px\n新しいサイズ: {new_width}px x {new_height}px"
+            )
         except Exception as e:
-            messagebox.showerror("エラー", f"プレビューの生成中にエラーが発生しました: {str(e)}")
+            messagebox.showerror(
+                "エラー", f"プレビューの生成中にエラーが発生しました: {str(e)}"
+            )
 
     def change_output_dir(self):
-        print("change_output_dir")
+        logger.debug("change_output_dir")
         dir_path = filedialog.askdirectory()
         if dir_path:
             self.output_dir = dir_path
@@ -263,7 +306,7 @@ class ImageProcessorApp:
             self.output_entry.insert(0, self.output_dir)
 
     def execute(self):
-        print("execute")
+        logger.debug("execute")
         if not self.image_paths:
             messagebox.showinfo("情報", "画像を選択してください")
             return
@@ -274,7 +317,9 @@ class ImageProcessorApp:
             try:
                 os.makedirs(self.output_dir)
             except Exception as e:
-                messagebox.showerror("エラー", f"出力ディレクトリの作成に失敗しました: {str(e)}")
+                messagebox.showerror(
+                    "エラー", f"出力ディレクトリの作成に失敗しました: {str(e)}"
+                )
                 return
 
         # 現在のタブを取得
@@ -282,22 +327,26 @@ class ImageProcessorApp:
 
         # 処理を別スレッドで実行
         self.execute_btn.config(state=tk.DISABLED)
-        self.progress['value'] = 0
-        self.progress['maximum'] = len(self.image_paths)
+        self.progress["value"] = 0
+        self.progress["maximum"] = len(self.image_paths)
 
-        thread = threading.Thread(target=self.process_images, args=(current_tab,))
+        thread = threading.Thread(
+            target=self.process_images, args=(current_tab,)
+        )
         thread.daemon = True
         thread.start()
 
     def process_images(self, operation):
-        print("process_images")
+        logger.debug("process_images")
         success_count = 0
         error_count = 0
 
         for i, image_path in enumerate(self.image_paths):
             try:
                 # 進捗状況更新
-                self.root.after(0, lambda val=i: self.progress.config(value=val+1))
+                self.root.after(
+                    0, lambda val=i: self.progress.config(value=val + 1)
+                )
 
                 # 画像を開く
                 img = Image.open(image_path)
@@ -306,24 +355,44 @@ class ImageProcessorApp:
                 file_name = os.path.basename(image_path)
                 base_name, ext = os.path.splitext(file_name)
 
+                logger.debug(f"拡張子: {ext}")
+
                 # 処理タイプに応じた処理
                 if operation == "圧縮":
-                    quality = self.compress_quality.get()
-                    output_path = os.path.join(self.output_dir, f"{base_name}_edited{ext}")
-                    img.save(output_path, quality=quality, optimize=True)
+                    # 1から10の入力を5から95に変換
+                    quality = (int(self.compress_quality.get()) - 1) * 10 + 5
+                    output_path = os.path.join(
+                        self.output_dir, f"{base_name}_edited{ext}"
+                    )
+                    if ext.lower()[1:] == "png":
+                        img.quantize(colors=PNG_COLORS).save(
+                            output_path, quality=quality, optimize=True
+                        )
+                    else:
+                        img.save(output_path, quality=quality, optimize=True)
 
                 elif operation == "形式変更":
                     target_format = self.target_format.get()
-                    output_path = os.path.join(self.output_dir, f"{base_name}_edited.{target_format}")
+                    output_path = os.path.join(
+                        self.output_dir, f"{base_name}_edited.{target_format}"
+                    )
 
                     # PNGなどの形式に透過処理を適用
-                    if target_format.lower() in ['png', 'webp'] and img.mode != 'RGBA':
-                        img = img.convert('RGBA')
-                    elif target_format.lower() in ['jpeg', 'jpg'] and img.mode == 'RGBA':
+                    if (
+                        target_format.lower() in ["png", "webp"]
+                        and img.mode != "RGBA"
+                    ):
+                        img = img.convert("RGBA")
+                    elif (
+                        target_format.lower() in ["jpeg", "jpg"]
+                        and img.mode == "RGBA"
+                    ):
                         # JPEGは透過をサポートしないため、白背景を適用
-                        background = Image.new('RGBA', img.size, (255, 255, 255))
+                        background = Image.new(
+                            "RGBA", img.size, (255, 255, 255)
+                        )
                         img = Image.alpha_composite(background, img)
-                        img = img.convert('RGB')
+                        img = img.convert("RGB")
 
                     img.save(output_path, format=target_format.upper())
 
@@ -337,8 +406,12 @@ class ImageProcessorApp:
                         new_height = self.resize_value.get()
                         new_width = int(width * (new_height / height))
 
-                    resized_img = img.resize((new_width, new_height), Image.LANCZOS)
-                    output_path = os.path.join(self.output_dir, f"{base_name}_edited{ext}")
+                    resized_img = img.resize(
+                        (new_width, new_height), Image.LANCZOS
+                    )
+                    output_path = os.path.join(
+                        self.output_dir, f"{base_name}_edited{ext}"
+                    )
                     resized_img.save(output_path)
 
                 success_count += 1
@@ -348,24 +421,35 @@ class ImageProcessorApp:
                 print(f"エラー ({image_path}): {str(e)}")
 
         # 処理完了後の処理
-        self.root.after(0, lambda: self.processing_complete(success_count, error_count))
+        self.root.after(
+            0, lambda: self.processing_complete(success_count, error_count)
+        )
 
     def processing_complete(self, success_count, error_count):
-        print("processing_complete")
+        logger.debug("processing_complete")
         self.execute_btn.config(state=tk.NORMAL)
-        messagebox.showinfo("完了", f"処理が完了しました\n成功: {success_count}\nエラー: {error_count}")
+        messagebox.showinfo(
+            "完了",
+            f"処理が完了しました\n成功: {success_count}\nエラー: {error_count}",
+        )
+
+    def cancel_upload(self):
+        logger.debug("cancel_upload")
+        # アップロードした画像のファイルを削除する
+        self.image_paths = []
+        self.update_file_list()
+        self.update_image_info()
+
 
 if __name__ == "__main__":
-    # root = tk.Tk()
-
-    # TkinterのDnDを有効にする
     try:
-        import tkinterdnd2
         root = tkinterdnd2.TkinterDnD.Tk()
     except ImportError:
         root = tk.Tk()
-        print("tkinterdnd2がインストールされていないため、ドラッグ&ドロップ機能は無効です。")
-        print("インストールするには: pip install tkinterdnd2")
+        logger.error(
+            "tkinterdnd2がインストールされていないため、ドラッグ&ドロップ機能は無効です。"
+        )
+        logger.error("インストールするには: pip install tkinterdnd2")
 
     app = ImageProcessorApp(root)
     root.mainloop()

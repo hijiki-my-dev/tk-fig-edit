@@ -9,6 +9,9 @@ import threading
 from PIL import Image, ImageTk
 from pathlib import Path
 import shutil
+from logger import Logger
+
+logger = Logger()
 
 class ImageProcessorApp:
     def __init__(self, root):
@@ -32,7 +35,7 @@ class ImageProcessorApp:
         self.create_ui()
 
     def create_ui(self):
-        print("create_ui")
+        logger.debug("create_ui")
         # メインフレーム
         main_frame = ttk.Frame(self.root, padding="10")
         main_frame.pack(fill=tk.BOTH, expand=True)
@@ -107,7 +110,7 @@ class ImageProcessorApp:
     #     ttk.Label(frame, text="高い値ほど低品質になりますが、ファイルサイズは小さくなります。").grid(row=1, column=0, columnspan=3, sticky=tk.W, pady=10)
 
     def setup_compress_tab(self):
-        print("setup_compress_tab")
+        logger.debug("setup_compress_tab")
         frame = ttk.Frame(self.compress_tab, padding="10")
         frame.pack(fill=tk.BOTH, expand=True)
 
@@ -131,7 +134,7 @@ class ImageProcessorApp:
 
 
     def setup_format_tab(self):
-        print("setup_format_tab")
+        logger.debug("setup_format_tab")
         frame = ttk.Frame(self.format_tab, padding="10")
         frame.pack(fill=tk.BOTH, expand=True)
 
@@ -144,10 +147,10 @@ class ImageProcessorApp:
         format_combo.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=5)
 
         # 説明
-        ttk.Label(frame, text="注: HEICはPillowでは直接サポートされていません。").grid(row=1, column=0, columnspan=2, sticky=tk.W, pady=10)
+        ttk.Label(frame, text="注: HEICはlowでは直接サポートされていません。").grid(row=1, column=0, columnspan=2, sticky=tk.W, pady=10)
 
     def setup_resize_tab(self):
-        print("setup_resize_tab")
+        logger.debug("setup_resize_tab")
         frame = ttk.Frame(self.resize_tab, padding="10")
         frame.pack(fill=tk.BOTH, expand=True)
 
@@ -171,45 +174,48 @@ class ImageProcessorApp:
         ttk.Label(resize_frame, text="pixels").grid(row=0, column=2, rowspan=2, padx=5, sticky=tk.W)
 
         # プレビュー
-        preview_frame = ttk.LabelFrame(frame, text="プレビュー")
-        preview_frame.pack(fill=tk.BOTH, expand=True, pady=10)
+        # preview_frame = ttk.LabelFrame(frame, text="プレビュー")
+        # preview_frame.pack(fill=tk.BOTH, expand=True, pady=10)
 
-        self.preview_label = ttk.Label(preview_frame, text="選択された画像のプレビュー")
-        self.preview_label.pack(pady=20)
+        # self.preview_label = ttk.Label(preview_frame, text="選択された画像のプレビュー")
+        # self.preview_label.pack(pady=20)
 
-        self.preview_btn = ttk.Button(frame, text="プレビュー", command=self.show_preview)
-        self.preview_btn.pack(pady=5)
+        # self.preview_btn = ttk.Button(frame, text="プレビュー", command=self.show_preview)
+        # self.preview_btn.pack(pady=5)
 
     def select_files(self):
-        print("select_files")
+        logger.debug("select_files")
         files = filedialog.askopenfilenames(filetypes=[("画像ファイル", "*.jpg *.jpeg *.png *.webp *.tiff *.bmp *.gif")])
         if files:
-            self.image_paths = list(files)
+            self.image_paths.extend(list(files))
             self.update_file_list()
             self.update_image_info()
 
     def drop(self, event):
-        print("drop")
+        logger.debug("drop")
         files = self.root.tk.splitlist(event.data)
+        logger.debug(f"files: {files}")
         valid_files = [f for f in files if self.is_valid_image(f)]
         if valid_files:
-            self.image_paths = valid_files
+            self.image_paths.extend(valid_files)
+            logger.debug(f"image_paths: {self.image_paths}")
             self.update_file_list()
             self.update_image_info()
 
     def is_valid_image(self, file_path):
-        print("is_valid_image")
+        logger.debug("is_valid_image")
         _, ext = os.path.splitext(file_path)
         return ext.lower() in ['.jpg', '.jpeg', '.png', '.webp', '.tiff', '.bmp', '.gif']
 
     def update_file_list(self):
-        print("update_file_list")
+        logger.debug("update_file_list")
         self.file_list.delete(1.0, tk.END)
         for path in self.image_paths:
             self.file_list.insert(tk.END, f"{path}\n")
+        logger.debug(f"image_paths: {self.image_paths}")
 
     def update_image_info(self):
-        print("update_image_info")
+        logger.debug("update_image_info")
         if self.image_paths:
             try:
                 img = Image.open(self.image_paths[0])
@@ -217,20 +223,20 @@ class ImageProcessorApp:
                 self.current_size_label.config(text=f"幅: {width}px, 高さ: {height}px")
 
                 # プレビュー表示
-                self.display_preview(img)
+                # self.display_preview(img)
             except Exception as e:
                 self.current_size_label.config(text=f"エラー: {str(e)}")
 
-    def display_preview(self, img):
-        print("display_preview")
-        # プレビュー用にサイズ調整
-        img.thumbnail((300, 300))
-        photo = ImageTk.PhotoImage(img)
-        self.preview_label.config(image=photo)
-        self.preview_label.image = photo  # 参照を保持
+    # def display_preview(self, img):
+    #     logger.debug("display_preview")
+    #     # プレビュー用にサイズ調整
+    #     img.thumbnail((300, 300))
+    #     photo = ImageTk.PhotoImage(img)
+    #     self.preview_label.config(image=photo)
+    #     self.preview_label.image = photo  # 参照を保持
 
     def show_preview(self):
-        print("show_preview")
+        logger.debug("show_preview")
         if not self.image_paths:
             messagebox.showinfo("情報", "画像を選択してください")
             return
@@ -248,14 +254,14 @@ class ImageProcessorApp:
                 new_width = int(width * (new_height / height))
 
             resized_img = img.resize((new_width, new_height), Image.LANCZOS)
-            self.display_preview(resized_img)
+            # self.display_preview(resized_img)
 
             self.current_size_label.config(text=f"元のサイズ: {width}px x {height}px\n新しいサイズ: {new_width}px x {new_height}px")
         except Exception as e:
             messagebox.showerror("エラー", f"プレビューの生成中にエラーが発生しました: {str(e)}")
 
     def change_output_dir(self):
-        print("change_output_dir")
+        logger.debug("change_output_dir")
         dir_path = filedialog.askdirectory()
         if dir_path:
             self.output_dir = dir_path
@@ -263,7 +269,7 @@ class ImageProcessorApp:
             self.output_entry.insert(0, self.output_dir)
 
     def execute(self):
-        print("execute")
+        logger.debug("execute")
         if not self.image_paths:
             messagebox.showinfo("情報", "画像を選択してください")
             return
@@ -290,7 +296,7 @@ class ImageProcessorApp:
         thread.start()
 
     def process_images(self, operation):
-        print("process_images")
+        logger.debug("process_images")
         success_count = 0
         error_count = 0
 
@@ -351,7 +357,7 @@ class ImageProcessorApp:
         self.root.after(0, lambda: self.processing_complete(success_count, error_count))
 
     def processing_complete(self, success_count, error_count):
-        print("processing_complete")
+        logger.debug("processing_complete")
         self.execute_btn.config(state=tk.NORMAL)
         messagebox.showinfo("完了", f"処理が完了しました\n成功: {success_count}\nエラー: {error_count}")
 
@@ -364,8 +370,8 @@ if __name__ == "__main__":
         root = tkinterdnd2.TkinterDnD.Tk()
     except ImportError:
         root = tk.Tk()
-        print("tkinterdnd2がインストールされていないため、ドラッグ&ドロップ機能は無効です。")
-        print("インストールするには: pip install tkinterdnd2")
+        logger.error("tkinterdnd2がインストールされていないため、ドラッグ&ドロップ機能は無効です。")
+        logger.error("インストールするには: pip install tkinterdnd2")
 
     app = ImageProcessorApp(root)
     root.mainloop()

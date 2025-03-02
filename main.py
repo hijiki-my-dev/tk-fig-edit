@@ -13,6 +13,9 @@ from logger import Logger
 
 logger = Logger()
 
+DEFALT_COMPRESS_RATE = 7
+PNG_COLLORS = 256
+
 class ImageProcessorApp:
     def __init__(self, root):
         self.root = root
@@ -116,7 +119,7 @@ class ImageProcessorApp:
 
         ttk.Label(frame, text="圧縮後の品質 (低 → 高):").grid(row=0, column=0, sticky=tk.W, pady=10)
 
-        self.compress_quality = tk.DoubleVar(value=8)  # IntVar → DoubleVar に変更
+        self.compress_quality = tk.DoubleVar(value=DEFALT_COMPRESS_RATE)  # IntVar → DoubleVar に変更
         quality_scale = ttk.Scale(frame, from_=1, to=10, variable=self.compress_quality, orient=tk.HORIZONTAL)
         quality_scale.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=5)
 
@@ -312,12 +315,17 @@ class ImageProcessorApp:
                 file_name = os.path.basename(image_path)
                 base_name, ext = os.path.splitext(file_name)
 
+                logger.debug(f"拡張子: {ext}")
+
                 # 処理タイプに応じた処理
                 if operation == "圧縮":
                     # 1から10の入力を5から95に変換
                     quality = (int(self.compress_quality.get()) - 1) * 10 + 5
                     output_path = os.path.join(self.output_dir, f"{base_name}_edited{ext}")
-                    img.save(output_path, quality=quality, optimize=True)
+                    if ext.lower()[1:] == "png":
+                        img.quantize(colors=PNG_COLLORS).save(output_path, quality=quality, optimize=True)
+                    else:
+                        img.save(output_path, quality=quality, optimize=True)
 
                 elif operation == "形式変更":
                     target_format = self.target_format.get()

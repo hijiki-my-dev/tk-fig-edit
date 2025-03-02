@@ -13,8 +13,9 @@ from logger import Logger
 
 logger = Logger()
 
-DEFALT_COMPRESS_RATE = 7
-PNG_COLLORS = 256
+DEFAULT_COMPRESS_RATE = 7
+DEFAULT_RESIZE_VALUE = 800
+PNG_COLORS = 256
 
 class ImageProcessorApp:
     def __init__(self, root):
@@ -123,7 +124,7 @@ class ImageProcessorApp:
 
         ttk.Label(frame, text="圧縮後の品質 (低 → 高):").grid(row=0, column=0, sticky=tk.W, pady=10)
 
-        self.compress_quality = tk.DoubleVar(value=DEFALT_COMPRESS_RATE)  # IntVar → DoubleVar に変更
+        self.compress_quality = tk.DoubleVar(value=DEFAULT_COMPRESS_RATE)  # IntVar → DoubleVar に変更
         quality_scale = ttk.Scale(frame, from_=1, to=10, variable=self.compress_quality, orient=tk.HORIZONTAL)
         quality_scale.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=5)
 
@@ -176,7 +177,7 @@ class ImageProcessorApp:
         ttk.Radiobutton(resize_frame, text="幅を指定", variable=self.resize_by, value="width").grid(row=0, column=0, padx=5, sticky=tk.W)
         ttk.Radiobutton(resize_frame, text="高さを指定", variable=self.resize_by, value="height").grid(row=1, column=0, padx=5, sticky=tk.W)
 
-        self.resize_value = tk.IntVar(value=800)
+        self.resize_value = tk.IntVar(value=DEFAULT_RESIZE_VALUE)
         ttk.Entry(resize_frame, textvariable=self.resize_value, width=10).grid(row=0, column=1, rowspan=2, padx=5)
         ttk.Label(resize_frame, text="pixels").grid(row=0, column=2, rowspan=2, padx=5, sticky=tk.W)
 
@@ -327,7 +328,7 @@ class ImageProcessorApp:
                     quality = (int(self.compress_quality.get()) - 1) * 10 + 5
                     output_path = os.path.join(self.output_dir, f"{base_name}_edited{ext}")
                     if ext.lower()[1:] == "png":
-                        img.quantize(colors=PNG_COLLORS).save(output_path, quality=quality, optimize=True)
+                        img.quantize(colors=PNG_COLORS).save(output_path, quality=quality, optimize=True)
                     else:
                         img.save(output_path, quality=quality, optimize=True)
 

@@ -96,6 +96,10 @@ class ImageProcessorApp:
         self.execute_btn = ttk.Button(execute_frame, text="実行", command=self.execute)
         self.execute_btn.pack(side=tk.RIGHT, padx=5)
 
+        # 取り消しボタン
+        cancel_btn = ttk.Button(execute_frame, text="取り消し", command=self.cancel_upload)
+        cancel_btn.pack(side=tk.LEFT, padx=5)
+
     # def setup_compress_tab(self):
     #     frame = ttk.Frame(self.compress_tab, padding="10")
     #     frame.pack(fill=tk.BOTH, expand=True)
@@ -369,6 +373,13 @@ class ImageProcessorApp:
         logger.debug("processing_complete")
         self.execute_btn.config(state=tk.NORMAL)
         messagebox.showinfo("完了", f"処理が完了しました\n成功: {success_count}\nエラー: {error_count}")
+
+    def cancel_upload(self):
+        logger.debug("cancel_upload")
+        # アップロードした画像のファイルを削除する
+        self.image_paths = []
+        self.update_file_list()
+        self.update_image_info()
 
 if __name__ == "__main__":
     # root = tk.Tk()

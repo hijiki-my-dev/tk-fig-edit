@@ -10,6 +10,16 @@
 - ドラッグ&ドロップ対応
 - 複数ファイルの一括処理
 
+## アプリ画面
+- 画像圧縮
+![Image 1](figures/editapp_compress.png)
+
+- 形式変更
+![Image 2](figures/editapp_ext.png)
+
+- リサイズ
+![Image 3](figures/editapp_resize.png)
+
 ## 環境
 
 - Python 3.12

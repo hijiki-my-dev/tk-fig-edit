@@ -1,5 +1,6 @@
 .python-version
 pyproject.toml
+icon/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

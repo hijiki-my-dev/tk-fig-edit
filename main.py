@@ -10,7 +10,8 @@ from tkinterdnd2 import DND_FILES
 
 from logger import Logger
 
-logger = Logger()
+log_level = "WARNING"
+logger = Logger(log_level)
 
 DEFAULT_COMPRESS_RATE = 7
 DEFAULT_RESIZE_VALUE = 800

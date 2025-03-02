@@ -114,10 +114,10 @@ class ImageProcessorApp:
         frame = ttk.Frame(self.compress_tab, padding="10")
         frame.pack(fill=tk.BOTH, expand=True)
 
-        ttk.Label(frame, text="圧縮品質 (低 → 高):").grid(row=0, column=0, sticky=tk.W, pady=10)
+        ttk.Label(frame, text="圧縮後の品質 (低 → 高):").grid(row=0, column=0, sticky=tk.W, pady=10)
 
-        self.compress_quality = tk.DoubleVar(value=85)  # IntVar → DoubleVar に変更
-        quality_scale = ttk.Scale(frame, from_=1, to=100, variable=self.compress_quality, orient=tk.HORIZONTAL)
+        self.compress_quality = tk.DoubleVar(value=8)  # IntVar → DoubleVar に変更
+        quality_scale = ttk.Scale(frame, from_=1, to=10, variable=self.compress_quality, orient=tk.HORIZONTAL)
         quality_scale.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=5)
 
         self.quality_label = ttk.Label(frame, text=str(int(self.compress_quality.get())))  # 初期値を整数で表示
@@ -130,7 +130,7 @@ class ImageProcessorApp:
         self.compress_quality.trace_add("write", update_label)
 
         # 説明
-        ttk.Label(frame, text="高い値ほど低品質になりますが、ファイルサイズは小さくなります。").grid(row=1, column=0, columnspan=3, sticky=tk.W, pady=10)
+        ttk.Label(frame, text="低い値ほど低品質になり、ファイルサイズが小さくなります。").grid(row=1, column=0, columnspan=3, sticky=tk.W, pady=10)
 
 
     def setup_format_tab(self):
@@ -314,7 +314,8 @@ class ImageProcessorApp:
 
                 # 処理タイプに応じた処理
                 if operation == "圧縮":
-                    quality = self.compress_quality.get()
+                    # 1から10の入力を5から95に変換
+                    quality = (int(self.compress_quality.get()) - 1) * 10 + 5
                     output_path = os.path.join(self.output_dir, f"{base_name}_edited{ext}")
                     img.save(output_path, quality=quality, optimize=True)
 

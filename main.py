@@ -123,9 +123,7 @@ class ImageProcessorApp:
             row=0, column=0, sticky=tk.W, pady=10
         )
 
-        self.compress_quality = tk.DoubleVar(
-            value=DEFAULT_COMPRESS_RATE
-        )  # IntVar → DoubleVar に変更
+        self.compress_quality = tk.DoubleVar(value=DEFAULT_COMPRESS_RATE)
         quality_scale = ttk.Scale(
             frame,
             from_=1,
@@ -137,7 +135,7 @@ class ImageProcessorApp:
 
         self.quality_label = ttk.Label(
             frame, text=str(int(self.compress_quality.get()))
-        )  # 初期値を整数で表示
+        )
         self.quality_label.grid(row=0, column=2, padx=5)
 
         # スライダーの値が変わったら整数にしてラベルを更新
@@ -147,8 +145,6 @@ class ImageProcessorApp:
             )
 
         self.compress_quality.trace_add("write", update_label)
-
-        # 説明
         ttk.Label(
             frame,
             text="低い値ほど低品質になり、ファイルサイズが小さくなります。",
@@ -176,7 +172,6 @@ class ImageProcessorApp:
         frame = ttk.Frame(self.resize_tab, padding="10")
         frame.pack(fill=tk.BOTH, expand=True)
 
-        # サイズ表示
         size_frame = ttk.LabelFrame(frame, text="現在のサイズ")
         size_frame.pack(fill=tk.X, pady=10)
 
@@ -185,10 +180,8 @@ class ImageProcessorApp:
         )
         self.current_size_label.pack(pady=5)
 
-        # リサイズパラメータ
         resize_frame = ttk.Frame(frame)
         resize_frame.pack(fill=tk.X, pady=10)
-
         self.resize_by = tk.StringVar(value="width")
         ttk.Radiobutton(
             resize_frame,
@@ -266,9 +259,6 @@ class ImageProcessorApp:
                 self.current_size_label.config(
                     text=f"幅: {width}px, 高さ: {height}px"
                 )
-
-                # プレビュー表示
-                # self.display_preview(img)
             except Exception as e:
                 self.current_size_label.config(text=f"エラー: {str(e)}")
 
@@ -282,7 +272,6 @@ class ImageProcessorApp:
             img = Image.open(self.image_paths[0])
             width, height = img.size
 
-            # リサイズ処理
             if self.resize_by.get() == "width":
                 new_width = self.resize_value.get()
                 new_height = int(height * (new_width / width))
@@ -344,15 +333,11 @@ class ImageProcessorApp:
 
         for i, image_path in enumerate(self.image_paths):
             try:
-                # 進捗状況更新
                 self.root.after(
                     0, lambda val=i: self.progress.config(value=val + 1)
                 )
 
-                # 画像を開く
                 img = Image.open(image_path)
-
-                # ファイル名と拡張子の取得
                 file_name = os.path.basename(image_path)
                 base_name, ext = os.path.splitext(file_name)
 
@@ -421,7 +406,6 @@ class ImageProcessorApp:
                 error_count += 1
                 print(f"エラー ({image_path}): {str(e)}")
 
-        # 処理完了後の処理
         self.root.after(
             0, lambda: self.processing_complete(success_count, error_count)
         )
